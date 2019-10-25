@@ -3,10 +3,14 @@ package com.mybatisext.enumdata;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class EnumContext {
 
     public Map<Class, EnumData> dataMap = new ConcurrentHashMap<Class, EnumData>();
+
+    private Lock lock = new ReentrantLock(true);
 
     private EnumContext() {}
 
@@ -25,8 +29,18 @@ public class EnumContext {
                 return null;
             }
 
-            enumData = new EnumData(enumClazz);
-            INSTANCE.dataMap.put(enumClazz, enumData);
+            lock.lock();
+            try {
+                enumData = dataMap.get(enumClazz);
+                if(null!=enumData){
+                    return enumData;
+                }
+                enumData = new EnumData(enumClazz);
+                INSTANCE.dataMap.put(enumClazz, enumData);
+            }finally {
+                lock.unlock();
+            }
+
         }
         return enumData.get(code);
     }
